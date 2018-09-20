@@ -1,5 +1,15 @@
 def initialize():
-    return [[[1,1,1,1,1],[1,1,1,1,1]], [0,0], []]
+    initial = [[[1,1,1,1,1],[1,1,1,1,1]], [0,0], [], ['Player 1','Player 2']]
+    return initial
+
+def name(names):
+    buffer = input('Player 1\'s name? ')
+    if (buffer != ''):
+        names[0] = buffer
+    buffer = input('Player 2\'s name? ')
+    if (buffer != ''):
+        names[1] = buffer
+    return names
 
 def life(soldiers, team):
     return sum(soldiers[team % 2])
@@ -41,6 +51,18 @@ def register(log, data):
     log += [data]
     return log
 
+def archive(log, names):
+    print('\nLog:')
+    file = open('modus-five.txt','a')
+    file.write('New game:\n')
+    file.write('Player 1\'s name: ' + names[0] + '\n')
+    file.write('Player 2\'s name: ' + names[1] + '\n')
+    for i in range(len(log)):
+        print('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2:]))
+        file.write('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2:]) + '\n')
+    file.write('Game over.\n\n')
+    file.close()
+
 def draw(current_turn, log):
     draw_log = {}
     for size in range (1, 1 + int((current_turn + 1) / 6), 1):
@@ -59,30 +81,30 @@ def draw(current_turn, log):
                 return 1
     return 0
         
-def turn(current_turn, team, soldiers, warnings, log):
+def turn(current_turn, team, soldiers, warnings, log, names):
     print('\nTurn ' + str(current_turn))
-    print('Player ' + str(team + 1) + '\'s time:')
+    print(names[team] + '\'s time:')
     backup = save(soldiers)
     move = int(input('Your move? '))
     if (move == 0):
         attacker = int(input('Your attacker? '))
-        deffender = int(input('Opponent deffender? '))
+        deffender = int(input(names[(team + 1) % 2] + '\'s deffender? '))
         attack(soldiers, team, attacker, deffender)
-        register(log, (current_turn, team, backup, (move, attacker, deffender)))
+        move = (move, attacker, deffender)
     elif (move == 1):
         MT(soldiers, team)
-        register(log, (current_turn, team, backup, (move)))
     elif (move == 2):
         MA(soldiers, team)
-        register(log, (current_turn, team, backup, (move)))
+    register(log, (current_turn, team, backup, move, soldiers))
     if (soldiers == backup):
         print(soldiers)
         warnings[team] += 1
         log.pop()
         print('Player ' + str(team + 1) + '\'s warning number [' + str(warnings[team]) + '/3].')
         if (warnings[team] < 3):
-            turn(current_turn, team, soldiers, warnings, log)
+            turn(current_turn, team, soldiers, warnings, log, names)
         else:
+            register(log, (current_turn, team, backup, 3, soldiers))
             print('\nPlayer ' + str((team + 1) % 2 + 1) + ' won!')
             print('Game over.')
             return log
@@ -96,30 +118,21 @@ def turn(current_turn, team, soldiers, warnings, log):
         return log
     else:
         print(soldiers)
-        turn(current_turn + 1, (team + 1) % 2, soldiers, warnings, log)
-
-def archive(log):
-    print('\nLog:')
-    file = open('modus-five.txt','a')
-    file.write('New game:\n')
-    for i in range(len(log)):
-        print('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2]) + str(log[i][3]))
-        file.write('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2]) + str(log[i][3]) + '\n')
-    file.write('Game over.\n\n')
-    file.close()
+        turn(current_turn + 1, (team + 1) % 2, soldiers, warnings, log, names)
         
-
 def game():
-    print('Currently, move 0 is to attack, move 1 is to MT and move 2 is to MA.\nYour soldiers are labeled from 1 to 5.\n') 
     initial = initialize()
     soldiers = initial[0]
     warnings = initial[1]
     log = initial[2]
+    names = initial[3]
     print('Turn 0')
+    name(names)
     print(soldiers)
-    turn(1, 0, soldiers, warnings, log)
-    archive(log)
+    turn(1, 0, soldiers, warnings, log, names)
+    archive(log, names)
     print('\n')
     game()
 
+print('Currently, move 0 is to attack, move 1 is to MT and move 2 is to MA.\nYour soldiers are labeled from 1 to 5.\n') 
 game()
