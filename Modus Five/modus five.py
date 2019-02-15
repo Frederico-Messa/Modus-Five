@@ -1,69 +1,75 @@
-def initialize():
-    initial = [[[1,1,1,1,1],[1,1,1,1,1]], [0,0], [], ['Player 1','Player 2']]
-    return initial
+def Initialize():
+    global belligerent, warnings, log, playersNames, players
+    belligerent = [(1,1,1,1,1),(1,1,1,1,1)]
+    warnings = [0,0]
+    log = []
+    playersNames = ['Player 1','Player 2']
+    players = [True, True]
 
-def name(names):
+def SetPlayersNames():
+    global playersNames
     buffer = input('Player 1\'s name? ')
     if (buffer != ''):
-        names[0] = buffer
+        playersNames[0] = buffer
     buffer = input('Player 2\'s name? ')
     if (buffer != ''):
-        names[1] = buffer
-    return names
+        playersNames[1] = buffer
 
-def life(soldiers, team):
-    return sum(soldiers[team % 2])
+def SetNumberOfPlayers():
+    global players
 
-def MT(soldiers, team):
-    current_life = life(soldiers, team)
+def BelligerentHP(localBelligerent, team):
+    return sum(localBelligerent[team])
+
+def FullAverage(localBelligerent, team):
+    current_life = BelligerentHP(localBelligerent, team)
     if (current_life % 5 == 0):
         mean = int(current_life / 5)
-        soldiers[team] = [mean for i in range(5)]
-    return soldiers
+        localBelligerent[team] = (mean, mean, mean, mean, mean)
+    return localBelligerent
 
-def MA(soldiers, team):
-    alive = 0
-    for i in range(5):
-        if (soldiers[team][i] != 0):
-            alive += 1
-    current_life = life(soldiers, team)
-    if alive > 0 and (current_life % alive == 0):
-        mean = int(current_life / alive)
-        for i in range(5):
-            if (soldiers[team][i] != 0):
-                soldiers[team][i] = mean
-    return soldiers
+def LivelyAverage(localBelligerent, team):
+    current_life = BelligerentHP(localBelligerent, team)
+    if (current_life > 0):
+        alive = 0
+        for soldier in localBelligerent[team]:
+            if (soldier != 0):
+                alive += 1
+        if (current_life % alive == 0):
+            mean = int(current_life / alive)
+            for soldier in localBelligerent[team]:
+                if (soldier != 0):
+                    soldier = mean
+    return localBelligerent
 
-def attack(soldiers, team, attacker, deffender):
-    if (attacker >= 1 and attacker <= 5 and deffender >= 1 and deffender <= 5):
-        if (soldiers[(team + 1) % 2][deffender - 1] != 0 and soldiers[team][attacker - 1] != 0):
-            soldiers[(team + 1) % 2][deffender - 1] += soldiers[team][attacker - 1]
-            soldiers[(team + 1) % 2][deffender - 1] %= 5
-    return soldiers
+def Attack(localBelligerent, attackerTeam, attackerSoldier, defenderSoldier):
+    defenderTeam = (attackerTeam + 1) % 2
+    attackerHP = localBelligerent[defenderTeam][defenderSoldier - 1]
+    defenderHP = localBelligerent[attackerTeam][attackerSoldier - 1]
+    if (attackerSoldier >= 1 and attackerSoldier <= 5 and defenderSoldier >= 1 and defenderSoldier <= 5):
+        if (attackerHP != 0 and defenderHP != 0):
+            localBelligerent[defenderTeam] = localBelligerent[defenderTeam][:defenderSoldier - 1] + ((attackerHP + defenderHP) % 5,) + localBelligerent[defenderTeam][defenderSoldier:]
+    return localBelligerent
 
-def save(soldiers):
-    backup = [[],[]]
-    for i in range(2):
-        backup[i] += soldiers[i]
-    return backup
-
-def register(log, data):
+def Register(data):
+    global log
     log += [data]
-    return log
 
-def archive(log, names):
+def Archive():
+    global log, playersNames
     print('\nLog:')
     file = open('modus-five.txt','a')
     file.write('New game:\n')
-    file.write('Player 1\'s name: ' + names[0] + '\n')
-    file.write('Player 2\'s name: ' + names[1] + '\n')
+    file.write('Player 1\'s name: ' + playersNames[0] + '\n')
+    file.write('Player 2\'s name: ' + playersNames[1] + '\n')
     for i in range(len(log)):
         print('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2:]))
         file.write('Turn ' + str(log[i][0]) + ' (player ' + str(log[i][1] + 1) + '\'s turn): ' + str(log[i][2:]) + '\n')
     file.write('Game over.\n\n')
     file.close()
 
-def draw(current_turn, log):
+def IsDraw(current_turn):
+    global log
     draw_log = {}
     for size in range(1, 1 + int((current_turn + 1) / 6), 1):
         for i in range(0,6,2):
@@ -71,9 +77,9 @@ def draw(current_turn, log):
             item = log[slicer]
             key = []
             for line in item:
-                key += [tuple(tuple(line[2][0]) + tuple(line[2][1]))]
+                key += [tuple(tuple(line[3][0]) + tuple(line[3][1]))]
             key = tuple(key)
-            if key in draw_log:
+            if (key in draw_log):
                 draw_log[key] += 1
             else:
                 draw_log[key] = 1
@@ -81,151 +87,153 @@ def draw(current_turn, log):
                 return 1
     return 0
 
-def evaluate(soldiers):
+def Evaluate(localBelligerent):
     value = 0
-    for soldier in soldiers[0]:
-        if soldier == 0:
-            value += -5
-    for soldier in soldiers[1]:
-        if soldier == 0:
+    for soldier in localBelligerent[0]:
+        if (soldier == 0):
+            value -= 5
+    for soldier in localBelligerent[1]:
+        if (soldier == 0):
             value += 5
-    value += len(set(soldiers[0]))
-    value += -len(set(soldiers[1]))
+    value += len(set(localBelligerent[0]))
+    value -= len(set(localBelligerent[1]))
     return value
 
-def AI(soldiers, team, deep):
+def ArtificalIntelligence(localBelligerent, team, depth):
+    if (team == 1):
+        signal = 1
+    else:
+        signal = -1
     move0, attacker0, deffender0 = 0, 0, 0
-    value0 = float('inf')
+    value0 = -float('inf')
     for move1 in range(3):
-        if move1 == 0:
+        if (move1 == 0):
             for attacker1 in range(1,6):
                 for deffender1 in range(1,6):
-                    soldiers1 = save(soldiers)
-                    soldiers1 = attack(soldiers1, team, attacker1, deffender1)
-                    if soldiers != soldiers1:
-                        value1 = -float('inf')
+                    soldiers1 = list(localBelligerent)
+                    soldiers1 = Attack(soldiers1, team, attacker1, deffender1)
+                    if (belligerent != soldiers1):
+                        value1 = float('inf')
                         for move2 in range(3):
-                            if move2 == 0:
+                            if (move2 == 0):
                                 for attacker2 in range(1,6):
                                     for deffender2 in range(1,6):
-                                        soldiers2 = save(soldiers1)
-                                        soldiers2 = attack(soldiers2, (team + 1) % 2, attacker2, deffender2)
-                                        if soldiers1 != soldiers2:
-                                            if deep <= 1:
-                                                value2 = evaluate(soldiers2)
+                                        soldiers2 = list(soldiers1)
+                                        soldiers2 = Attack(soldiers2, (team + 1) % 2, attacker2, deffender2)
+                                        if (soldiers1 != soldiers2):
+                                            if (depth <= 1):
+                                                value2 = signal * Evaluate(soldiers2)
                                             else:
-                                                x, y, z, value2 = AI(soldiers2, team, deep - 1)
-                                            if value2 > value1:
+                                                value2 = ArtificalIntelligence(soldiers2, team, depth - 1)[3]
+                                            if (value2 < value1):
                                                 value1 = value2
                             else:
-                                soldiers2 = save(soldiers1)
-                                if move2 == 1:
-                                    soldiers2 = MT(soldiers2, 1)
-                                elif move2 == 2:
-                                    soldiers2 = MA(soldiers2, 1)
-                                if soldiers1 != soldiers2:
-                                    if deep <= 1:
-                                        value2 = evaluate(soldiers2)
+                                soldiers2 = list(soldiers1)
+                                if (move2 == 1):
+                                    soldiers2 = FullAverage(soldiers2, 1)
+                                elif (move2 == 2):
+                                    soldiers2 = LivelyAverage(soldiers2, 1)
+                                if (soldiers1 != soldiers2):
+                                    if (depth <= 1):
+                                        value2 = signal * Evaluate(soldiers2)
                                     else:
-                                        x, y, z, value2 = AI(soldiers2, team, deep - 1)
-                                    if value2 > value1:
+                                        value2 = ArtificalIntelligence(soldiers2, team, depth - 1)[3]
+                                    if (value2 < value1):
                                         value1 = value2
-                        if value1 < value0:
+                        if (value1 > value0):
                             value0, move0, attacker0, deffender0 = value1, move1, attacker1, deffender1
         else:
-            soldiers1 = save(soldiers)
-            if move1 == 1:
-                soldiers1 = MT(soldiers1, 1)
-            elif move1 == 2:
-                soldiers1 = MA(soldiers1, 1)
-            if soldiers != soldiers1:
-                value1 = -float('inf')
+            soldiers1 = list(localBelligerent)
+            if (move1 == 1):
+                soldiers1 = FullAverage(soldiers1, 1)
+            elif (move1 == 2):
+                soldiers1 = LivelyAverage(soldiers1, 1)
+            if (localBelligerent != soldiers1):
+                value1 = float('inf')
                 for move2 in range(3):
-                    if move2 == 0:
+                    if (move2 == 0):
                         for attacker2 in range(1,6):
                             for deffender2 in range(1,6):
-                                soldiers2 = save(soldiers1)
-                                soldiers2 = attack(soldiers2, (team + 1) % 2, attacker2, deffender2)
-                                if soldiers1 != soldiers2:
-                                    if deep <= 1:
-                                        value2 = evaluate(soldiers2)
+                                soldiers2 = list(soldiers1)
+                                soldiers2 = Attack(soldiers2, (team + 1) % 2, attacker2, deffender2)
+                                if (soldiers1 != soldiers2):
+                                    if (depth <= 1):
+                                        value2 = signal * Evaluate(soldiers2)
                                     else:
-                                        x, y, z, value2 = AI(soldiers2, team, deep - 1)
-                                    if value2 > value1:
+                                        value2 = ArtificalIntelligence(soldiers2, team, depth - 1)[3]
+                                    if (value2 < value1):
                                         value1 = value2
                     else:
-                        soldiers2 = save(soldiers1)
-                        if move2 == 1:
-                            soldiers2 = MT(soldiers2, 1)
-                        elif move2 == 2:
-                            soldiers2 = MA(soldiers2, 1)
-                        if soldiers1 != soldiers2:
-                            if deep <= 1:
-                                value2 = evaluate(soldiers2)
+                        soldiers2 = list(soldiers1)
+                        if (move2 == 1):
+                            soldiers2 = FullAverage(soldiers2, 1)
+                        elif (move2 == 2):
+                            soldiers2 = LivelyAverage(soldiers2, 1)
+                        if (soldiers1 != soldiers2):
+                            if (depth <= 1):
+                                value2 = signal * Evaluate(soldiers2)
                             else:
-                                x, y, z, value2 = AI(soldiers2, team, deep - 1)
-                            if value2 > value1:
+                                value2 = ArtificalIntelligence(soldiers2, team, depth - 1)[3]
+                            if (value2 < value1):
                                 value1 = value2
-                if value1 < value0:
+                if (value1 > value0):
                     value0, move0, attacker0, deffender0 = value1, move1, attacker1, deffender1
-
     return move0, attacker0, deffender0, value0
-        
-def turn(current_turn, team, soldiers, warnings, log, names):
-    backup = save(soldiers)
-    move, attacker, deffender, value = AI(soldiers, team, 2)
+
+def Turn(current_turn, team):
+    global belligerent, warnings, log, playersNames, players
+    backup = list(belligerent)
+    move, attacker, deffender, value = ArtificalIntelligence(belligerent[:], team, 2)
     print('\nTurn ' + str(current_turn) + ' | ' + str(value))
-    print(names[team] + '\'s time:')
-    #if team == 0:
-    #    move = int(input('Your move? '))
-    #    if (move == 0):
-    #        attacker = int(input('Your attacker? '))
-    #        deffender = int(input(names[(team + 1) % 2] + '\'s deffender? '))
+    print(playersNames[team] + '\'s time:')
+    if (players[team]):
+        move = int(input('Your move?  '))
+        if (move == 0):
+            attacker = int(input('Your attacker?  '))
+            deffender = int(input(playersNames[(team + 1) % 2] + '\'s deffender?  '))
     if (move == 0):
-        attack(soldiers, team, attacker, deffender)
+        Attack(belligerent, team, attacker, deffender)
         move = (move, attacker, deffender)
     if (move == 1):
-        MT(soldiers, team)
-    elif (move == 2):   
-        MA(soldiers, team)
-    register(log, (current_turn, team, backup, move, soldiers))
-    if (soldiers == backup):
-        print(soldiers)
+        FullAverage(belligerent, team)
+    elif (move == 2):
+        LivelyAverage(belligerent, team)
+    Register((current_turn, team, move, backup))
+    if (belligerent == backup):
+        print(belligerent)
         warnings[team] += 1
         log.pop()
         print('Player ' + str(team + 1) + '\'s warning number [' + str(warnings[team]) + '/3].')
         if (warnings[team] < 3):
-            turn(current_turn, team, soldiers, warnings, log, names)
+            Turn(current_turn, team)
         else:
-            register(log, (current_turn, team, backup, 3, soldiers))
+            Register((current_turn, team, 3, backup))
             print('\nPlayer ' + str((team + 1) % 2 + 1) + ' won!')
             print('Game over.')
             return log
-    elif (life(soldiers, (team + 1) % 2) == 0):
+    elif (BelligerentHP(belligerent, (team + 1) % 2) == 0):
         print('\nPlayer ' + str(team + 1) + ' won!')
         print('Game over.')
         return log
-    elif (draw(current_turn, log)):
+    elif (IsDraw(current_turn)):
         print('\nDraw! No one won.')
         print('Game over.')
         return log
     else:
-        print(soldiers)
-        turn(current_turn + 1, (team + 1) % 2, soldiers, warnings, log, names)
-        
-def game():
-    initial = initialize()
-    soldiers = initial[0]
-    warnings = initial[1]
-    log = initial[2]
-    names = initial[3]
-    print('Turn 0')
-    name(names)
-    print(soldiers)
-    turn(1, 0, soldiers, warnings, log, names)
-    archive(log, names)
-    print('\n')
-    game()
+        print(belligerent)
+        Turn(current_turn + 1, (team + 1) % 2)
 
-print('Currently, move 0 is to attack, move 1 is to MT and move 2 is to MA.\nYour soldiers are labeled from 1 to 5.\n') 
-game()
+def Game():
+    global belligerent
+    Initialize()
+    print('Turn 0')
+    SetPlayersNames()
+    SetNumberOfPlayers()
+    print(belligerent)
+    Turn(1, 0)
+    Archive()
+    print('\n')
+    Game()
+
+print('Currently, move 0 is to attack, move 1 is to Full Average and move 2 is to Lively Average.\nYour soldiers are labeled from 1 to 5.\n')
+Game()
