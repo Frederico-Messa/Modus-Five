@@ -1,17 +1,20 @@
-def Initialize():
-	global log, globalDict, numberOfPlayers, nextPlayer, playersNames, playersHumanity, warnings, belligerents, currentTurn, currentPlayer
+from time import time
+
+def initialize():
+	global log, globalDict, numberOfPlayers, nextPlayer, playersNames, playersHumanity, warnings, belligerents, currentTurn, currentPlayer, deepest
 	log = list()
 	globalDict = dict()
-	numberOfPlayers = SetNumberOfPlayers()
-	nextPlayer = SetNextPlayer()
-	playersNames = SetPlayersNames()
-	playersHumanity = SetHumanPlayers()
-	warnings = SetWarnings()
-	belligerents = SetBelligerents()
+	numberOfPlayers = setNumberOfPlayers()
+	nextPlayer = setNextPlayer()
+	playersNames = setPlayersNames()
+	playersHumanity = setHumanPlayers()
+	warnings = setWarnings()
+	belligerents = setBelligerents()
 	currentTurn = 1
 	currentPlayer = 0
+	deepest = 0
 
-def DeletePlayer(player):
+def deletePlayer(player):
 	global numberOfPlayers, nextPlayer, playersNames, playersHumanity, warnings, belligerents
 	numberOfPlayers -= 1
 	nextPlayer[numberOfPlayers - 1] = 0
@@ -21,7 +24,7 @@ def DeletePlayer(player):
 	warnings.pop(player)
 	belligerents.pop(player)
 
-def GetBool(prompt):
+def getBool(prompt):
 	while True:
 		try:
 		   return {'true':True,
@@ -36,7 +39,7 @@ def GetBool(prompt):
 		except KeyError:
 		   print('Invalid input please enter Yes or No!')
 
-def SetNumberOfPlayers():
+def setNumberOfPlayers():
 	buffer = input('Number of players? (press Enter for default) ')
 	if (buffer != ''):
 		numberOfPlayers = int(buffer)
@@ -45,7 +48,7 @@ def SetNumberOfPlayers():
 		print('Default selected: 2 players')
 	return numberOfPlayers
 
-def SetPlayersNames():
+def setPlayersNames():
 	playersNames = list()
 	for player in range(numberOfPlayers):
 		buffer = input('Player ' + str(player + 1) + '\'s name? ')
@@ -55,16 +58,16 @@ def SetPlayersNames():
 			playersNames.append('Player ' + str(player + 1))
 	return playersNames
 
-def SetHumanPlayers():
+def setHumanPlayers():
 	playersHumanity = list()
 	for player in range(numberOfPlayers):
-		if (GetBool(playersNames[player] + ' is a human player? ')):
+		if (getBool(playersNames[player] + ' is a human player? ')):
 			playersHumanity.append(True)
 		else:
 			playersHumanity.append(False)
 	return playersHumanity
 
-def SetNextPlayer():
+def setNextPlayer():
 	nextPlayer = dict()
 	for player in range(numberOfPlayers):
 		if (player + 1 != numberOfPlayers):
@@ -73,60 +76,56 @@ def SetNextPlayer():
 			nextPlayer[player] = 0
 	return nextPlayer
 
-def SetWarnings():
-	warnings = list()
-	for player in range(numberOfPlayers):
-		warnings.append(0)
+def setWarnings():
+	warnings = [0] * numberOfPlayers
 	return warnings
 
-def SetBelligerents():
-	belligerents = list()
-	for player in range(numberOfPlayers):
-		belligerents.append((1,1,1,1,1))
+def setBelligerents():
+	belligerents = [(1,1,1,1,1)] * numberOfPlayers
 	return belligerents
 
-def BelligerentHP(localBelligerents, team):
+def belligerentHP(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
 	return sum(localBelligerents[team])
 
-def TryFullAverage(localBelligerents, team):
+def tryFullAverage(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
-	current_life = BelligerentHP(localBelligerents, team)
-	differentAliveSoldiers = DifferentAliveSoldiers(localBelligerents, team)
-	if (len(differentAliveSoldiers) > 1 and current_life % 5 == 0):
+	current_life = belligerentHP(localBelligerents, team)
+	differentAliveSoldiersSet = differentAliveSoldiers(localBelligerents, team)
+	if (len(differentAliveSoldiersSet) > 1 and current_life % 5 == 0):
 		return True
 	else:
 		return False
 
-def FullAverage(localBelligerents, team):
+def fullAverage(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
-	current_life = BelligerentHP(localBelligerents, team)
-	if (TryFullAverage(localBelligerents, team)):
+	current_life = belligerentHP(localBelligerents, team)
+	if (tryFullAverage(localBelligerents, team)):
 		mean = int(current_life / 5)
 		localBelligerents[team] = (mean, mean, mean, mean, mean)
 	return localBelligerents
 
-def TryLivelyAverage(localBelligerents, team):
+def tryLivelyAverage(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
-	current_life = BelligerentHP(localBelligerents, team)
-	aliveSoldiers = AliveSoldiers(localBelligerents, team)
-	differentAliveSoldiers = DifferentAliveSoldiers(localBelligerents, team)
-	if (len(differentAliveSoldiers) > 1 and current_life % len(aliveSoldiers) == 0):
+	current_life = belligerentHP(localBelligerents, team)
+	aliveSoldiersSet = aliveSoldiers(localBelligerents, team)
+	differentAliveSoldiersSet = differentAliveSoldiers(localBelligerents, team)
+	if (len(differentAliveSoldiersSet) > 1 and current_life % len(aliveSoldiersSet) == 0):
 		return True
 	else:
 		return False
 
-def LivelyAverage(localBelligerents, team):
+def livelyAverage(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
-	current_life = BelligerentHP(localBelligerents, team)
-	aliveSoldiers = AliveSoldiers(localBelligerents, team)
-	if (TryLivelyAverage):
-		mean = int(current_life / len(aliveSoldiers))
-		for soldier in aliveSoldiers:
+	current_life = belligerentHP(localBelligerents, team)
+	aliveSoldiersSet = aliveSoldiers(localBelligerents, team)
+	if (tryLivelyAverage(localBelligerents, team)):
+		mean = int(current_life / len(aliveSoldiersSet))
+		for soldier in aliveSoldiersSet:
 			localBelligerents[team] = localBelligerents[team][:soldier] + (mean,) + localBelligerents[team][soldier + 1:]
 	return localBelligerents
 
-def TryAttack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier):
+def tryAttack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier):
 	localBelligerents = list(localBelligerents)
 	defenderTeam = nextPlayer[attackerTeam]
 	if (attackerSoldier >= 0 and attackerSoldier <= 4 and defenderSoldier >= 0 and defenderSoldier <= 4 and localBelligerents[attackerTeam][attackerSoldier] != 0 and localBelligerents[defenderTeam][defenderSoldier] != 0):
@@ -134,16 +133,16 @@ def TryAttack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier)
 	else:
 		return False
 
-def Attack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier):
+def attack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier):
 	localBelligerents = list(localBelligerents)
 	defenderTeam = nextPlayer[attackerTeam]
 	attackerHP = localBelligerents[defenderTeam][defenderSoldier]
 	defenderHP = localBelligerents[attackerTeam][attackerSoldier]
-	if (TryAttack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier)):
+	if (tryAttack(localBelligerents, attackerTeam, attackerSoldier, defenderSoldier)):
 		localBelligerents[defenderTeam] = localBelligerents[defenderTeam][:defenderSoldier] + ((attackerHP + defenderHP) % 5,) + localBelligerents[defenderTeam][defenderSoldier + 1:]
 	return localBelligerents
 
-def Archive(localPlayersNames):
+def archive(localPlayersNames):
 	print('\nLog:')
 	file = open('modus-five.txt','a')
 	file.write('New game:\n')
@@ -159,7 +158,7 @@ def Archive(localPlayersNames):
 		file.write(str(key[0]) + ' ' + str(key[1]) + ' ' + str(globalDict[key]) + '\n')
 	file.close()
 
-def IsDraw(currentTurnLocal):
+def isDraw(currentTurnLocal):
 	draw_log = {}
 	for size in range(1, 1 + int((currentTurnLocal + 1) / (numberOfPlayers * 3)), 1):
 		for i in range(0, 6, numberOfPlayers):
@@ -177,9 +176,8 @@ def IsDraw(currentTurnLocal):
 				return 1
 	return 0
 
-def Evaluate(localBelligerents, attackerTeam):
+def evaluate(localBelligerents, attackerTeam):
 	localBelligerents = list(localBelligerents)
-	defenderTeam = nextPlayer[attackerTeam]
 	value = 0
 	for player in range(numberOfPlayers):
 		for soldier in localBelligerents[player]:
@@ -194,7 +192,7 @@ def Evaluate(localBelligerents, attackerTeam):
 			value -= len(set(localBelligerents[player])) / (numberOfPlayers - 1)
 	return value
 
-def AliveSoldiers(localBelligerents, team):
+def aliveSoldiers(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
 	AliveSoldiers = set()
 	for soldier in range(5):
@@ -202,47 +200,47 @@ def AliveSoldiers(localBelligerents, team):
 			AliveSoldiers.add(soldier)
 	return AliveSoldiers
 
-def DifferentAliveSoldiers(localBelligerents, team):
+def differentAliveSoldiers(localBelligerents, team):
 	localBelligerents = list(localBelligerents)
-	aliveSoldiers = AliveSoldiers(localBelligerents, team)
+	aliveSoldiersSet = aliveSoldiers(localBelligerents, team)
 	differentAliveSoldiers = set()
 	differentSoldiersHPs = set()
-	for soldier in aliveSoldiers:
+	for soldier in aliveSoldiersSet:
 		if (not (localBelligerents[team][soldier] in differentSoldiersHPs)):
 			differentSoldiersHPs.add(localBelligerents[team][soldier])
 			differentAliveSoldiers.add(soldier)
 	return differentAliveSoldiers
 
-def TryAllMovements(localBelligerents, attackerTeam):
+def tryAllMovements(localBelligerents, attackerTeam):
 	localBelligerents = list(localBelligerents)
 	allMovements = dict()
 	defenderTeam = nextPlayer[attackerTeam]
-	differentAttackerSoldiers = DifferentAliveSoldiers(localBelligerents, attackerTeam)
-	differentDefenderSoldiers = DifferentAliveSoldiers(localBelligerents, defenderTeam)
+	differentAttackerSoldiers = differentAliveSoldiers(localBelligerents, attackerTeam)
+	differentDefenderSoldiers = differentAliveSoldiers(localBelligerents, defenderTeam)
 	for attackerBuffer in differentAttackerSoldiers:
 		for defenderBuffer in differentDefenderSoldiers:
-			allMovements[(0, attackerBuffer, defenderBuffer)] = Attack(localBelligerents, attackerTeam, attackerBuffer, defenderBuffer)
-	if (TryFullAverage(localBelligerents, attackerTeam)):
-		allMovements[1] = FullAverage(localBelligerents, attackerTeam)
-	if (TryLivelyAverage(localBelligerents, attackerTeam)):
-		allMovements[2] = LivelyAverage(localBelligerents, attackerTeam)
+			allMovements[(0, attackerBuffer, defenderBuffer)] = attack(localBelligerents, attackerTeam, attackerBuffer, defenderBuffer)
+	if (tryFullAverage(localBelligerents, attackerTeam)):
+		allMovements[1] = fullAverage(localBelligerents, attackerTeam)
+	if (tryLivelyAverage(localBelligerents, attackerTeam)):
+		allMovements[2] = livelyAverage(localBelligerents, attackerTeam)
 	return allMovements
 
-def ArtificalIntelligence(localBelligerents, attackerTeam, depth):
+def artificalIntelligence(localBelligerents, attackerTeam, depth):
 	localBelligerents = list(localBelligerents)
 	defenderTeam = nextPlayer[attackerTeam]
 	movement = 3
 	key = (tuple(sorted(localBelligerents[attackerTeam])), tuple(sorted(localBelligerents[defenderTeam])))
-	if (BelligerentHP(localBelligerents, attackerTeam) == 0):
+	if (belligerentHP(localBelligerents, attackerTeam) == 0):
 		globalDict[key] = (float('-inf'), depth)
 		return 3, float('-inf')
-	elif (BelligerentHP(localBelligerents, defenderTeam) == 0):
+	elif (belligerentHP(localBelligerents, defenderTeam) == 0):
 		globalDict[key] = (float('inf'), depth)
 		return 3, float('inf')
 	elif (depth <= 0):
-		return 3, Evaluate(localBelligerents, attackerTeam)
+		return 3, evaluate(localBelligerents, attackerTeam)
 	value = float('-inf')
-	allMovements = TryAllMovements(localBelligerents, attackerTeam)
+	allMovements = tryAllMovements(localBelligerents, attackerTeam)
 	for movementBuffer in allMovements.keys():
 		localBelligerentsBuffer = allMovements[movementBuffer]
 		keyBuffer = (tuple(sorted(localBelligerentsBuffer[defenderTeam])),
@@ -250,7 +248,7 @@ def ArtificalIntelligence(localBelligerents, attackerTeam, depth):
 		if (keyBuffer in globalDict and globalDict[keyBuffer][1] >= depth - 1):
 			valueBuffer = -globalDict[keyBuffer][0]
 		else:
-			valueBuffer = -ArtificalIntelligence(localBelligerentsBuffer, defenderTeam, depth - 1)[1]
+			valueBuffer = -artificalIntelligence(localBelligerentsBuffer, defenderTeam, depth - 1)[1]
 		if (valueBuffer == float('inf')):
 			return movementBuffer, float('inf')
 		if (valueBuffer >= value):
@@ -258,78 +256,89 @@ def ArtificalIntelligence(localBelligerents, attackerTeam, depth):
 	globalDict[key] = (value, depth)
 	return movement, value
 
-def PrintBelligerents(localBelligerents):
+def printBelligerents(localBelligerents):
 	localBelligerents = list(belligerents)
+	print('')
 	for player in range(numberOfPlayers):
 		print(playersNames[player] + '\'s belligerent: ' + str(localBelligerents[player]))
 
-def Turn():
-	global belligerents
+def turn():
+	global belligerents, deepest
 	warning = False
 	localBelligerents = list(belligerents)
-	move, value = ArtificalIntelligence(belligerents, currentPlayer, 4)
-	print('\nTurn ' + str(currentTurn) + ' | ' + str(value) + ' | ' + str(len(globalDict)))
-	print(playersNames[currentPlayer] + '\'s turn:')
+	print('\nTurn ' + str(currentTurn) + '\n' + playersNames[currentPlayer] + '\'s turn:')
 	if (playersHumanity[currentPlayer]):
 		move = int(input('Your move? '))
 		if (move == 0):
 			attacker = int(input('Your attacker? ')) - 1
 			defender = int(input(playersNames[nextPlayer[currentPlayer]] + '\'s defender? ')) - 1
-			belligerents = Attack(belligerents, currentPlayer, attacker, defender)
+			belligerents = attack(belligerents, currentPlayer, attacker, defender)
 			move = (move, attacker, defender)
-	elif (type(move) is tuple):
-		print('Your move? ' + str(move[0]))
-		print('Your attacker? ' + str(move[1] + 1))
-		print(playersNames[nextPlayer[currentPlayer]] + '\'s defender? ' + str(move[2] + 1))
-		belligerents = Attack(belligerents, currentPlayer, move[1], move[2])
 	else:
-		print('Your move? ' + str(move))
+		then = time()
+		while True:
+			move, value = artificalIntelligence(belligerents, currentPlayer, deepest)
+			now = time()
+			ellapsedTime = now - then
+			if (ellapsedTime > 1):
+				break
+			else:
+				deepest += 1
+		print('Advantage: ' + str(value) + ' | Depth: ' + str(deepest))
+		if (type(move) is tuple):
+			print('Your move? ' + str(move[0]))
+			print('Your attacker? ' + str(move[1] + 1))
+			print(playersNames[nextPlayer[currentPlayer]] + '\'s defender? ' + str(move[2] + 1))
+			belligerents = attack(belligerents, currentPlayer, move[1], move[2])
+		else:
+			print('Your move? ' + str(move))
 	if (move == 1):
-		belligerents = FullAverage(belligerents, currentPlayer)
+		belligerents = fullAverage(belligerents, currentPlayer)
 	elif (move == 2):
-		belligerents = LivelyAverage(belligerents, currentPlayer)
+		belligerents = livelyAverage(belligerents, currentPlayer)
 	if (belligerents == localBelligerents):
 		move = 3
 		belligerents = localBelligerents
 		warnings[currentPlayer] += 1
 		print('Player ' + str(currentPlayer + 1) + '\'s warning number [' + str(warnings[currentPlayer]) + '/3].')
 		warning = True
-	PrintBelligerents(belligerents)
+	printBelligerents(belligerents)
 	log.append((currentTurn, currentPlayer, localBelligerents, move))
-	if (IsDraw(currentTurn)):
+	if (isDraw(currentTurn)):
 		print('\nDraw! No one won.')
 		print('Game over.')
 		return 'Threefold repetition'
-	elif (BelligerentHP(belligerents, nextPlayer[currentPlayer]) == 0):
-		DeletePlayer(nextPlayer[currentPlayer])
+	elif (belligerentHP(belligerents, nextPlayer[currentPlayer]) == 0):
+		deletePlayer(nextPlayer[currentPlayer])
 		if (numberOfPlayers == 1):
 			print('\n' + playersNames[0] + ' won!')
 			print('Game over.')
 			return 'Checkmate'
 	elif (warnings[currentPlayer] == 3):
-		DeletePlayer(currentPlayer)
+		deletePlayer(currentPlayer)
 		if (numberOfPlayers == 1):
 			print('\n' + playersNames[0] + ' won!')
 			print('Game over.')
 			return 'Threefold warnings'
 	elif (warning == True):
-		return Turn()
+		return turn()
 	return ''
 
-def Game():
+def game():
 	global currentPlayer, currentTurn
-	Initialize()
+	initialize()
 	localPlayersNames = list(playersNames)
-	print('Turn 0')
-	PrintBelligerents(belligerents)
+	print('\nTurn 0')
+	printBelligerents(belligerents)
 	condition = ''
 	while (condition == ''):
-		condition = Turn()
+		condition = turn()
 		currentPlayer = nextPlayer[currentPlayer]
 		currentTurn += 1
-	Archive(localPlayersNames)
+	archive(localPlayersNames)
 	print('\n')
 
 print('Currently, move 0 is to attack, move 1 is to Full Average and move 2 is to Lively Average.\nYour soldiers are labeled from 1 to 5.\n')
-while True:
-	Game()
+game()
+while getBool('Play again? '):
+	game()
